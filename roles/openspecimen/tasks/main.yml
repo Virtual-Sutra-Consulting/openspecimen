@@ -127,6 +127,25 @@
     dest: "/tmp/{{ openspecimen_release }}.zip"
     mode: '0644'
   when:
+    - openspecimen_zip_source | default('local') == 'local'
+    - not (_plugins_only_change | default(false) or _config_only_change | default(false))
+    - not (_target_zip.stat.exists | default(false))
+
+- name: Download release zip to target from artifact URL (if not already present)
+  # ADR-013: alternative to the controller-push copy above, for VPN-connected
+  # targets that can reach the artifact URL directly. Credentials come in via
+  # -e at runtime (Jenkins credentials) and are never logged - no_log covers
+  # this task's args and result even under -v.
+  ansible.builtin.get_url:
+    url:                "{{ openspecimen_download_url }}"
+    dest:               "/tmp/{{ openspecimen_release }}.zip"
+    url_username:       "{{ openspecimen_download_username }}"
+    url_password:       "{{ openspecimen_download_password }}"
+    force_basic_auth:   true
+    mode:               '0644'
+  no_log: true
+  when:
+    - openspecimen_zip_source | default('local') == 'download'
     - not (_plugins_only_change | default(false) or _config_only_change | default(false))
     - not (_target_zip.stat.exists | default(false))
 
